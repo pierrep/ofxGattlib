@@ -4,6 +4,7 @@
 
 #include "gattlib.h"
 
+#define USE_DBUS 1
 
 
 class ofApp : public ofBaseApp{

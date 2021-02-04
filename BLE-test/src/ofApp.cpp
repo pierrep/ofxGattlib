@@ -1,15 +1,7 @@
 #include "ofApp.h"
+//#include "gattlib.h"
 
-
-#include <assert.h>
-//#include <glib.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "gattlib.h"
-
-// Battery Level UUID
+// UUIDs
 uuid_t g_pos_uuid;
 uuid_t g_button_uuid;
 uuid_t reset_uuid;
@@ -17,9 +9,9 @@ const char* posuid = "64A70002-F691-4B93-A6F4-0968F5B648F8";
 const char* butuid = "64A7000D-F691-4B93-A6F4-0968F5B648F8";
 const char* resuid = "64A70008-F691-4B93-A6F4-0968F5B648F8";
 
-//static GMainLoop *m_main_loop;
-
-int running = 1;
+#ifdef USE_DBUS
+static GMainLoop *m_main_loop;
+#endif
 
 
 void notification_handler(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data) {
@@ -35,11 +27,6 @@ void notification_handler(const uuid_t* uuid, const uint8_t* data, size_t data_l
     //printf("\n");
 }
 
-//static void on_user_abort(int arg) {
-//    //g_main_loop_quit(m_main_loop);
-//    running = 0;
-//}
-
 void ofApp::exit()
 {
     ofLogNotice() << "Exit called";
@@ -48,6 +35,10 @@ void ofApp::exit()
         gattlib_notification_stop(connection, &g_pos_uuid);
         gattlib_notification_stop(connection, &g_button_uuid);
         gattlib_disconnect(connection);
+
+        #ifdef USE_DBUS
+        g_main_loop_unref(m_main_loop);
+        #endif
     }
 }
 
@@ -64,7 +55,7 @@ void ofApp::setup(){
         std::exit(1);
     }
     ofLogNotice() <<"Connected to device";
-    bConnected = true;
+    bConnected = true;  
 
 
     // reset quaternions
@@ -88,7 +79,7 @@ void ofApp::setup(){
     }
 
 
-/*****/
+
 //    gattlib_context_t* conn_context = connection->context;
 //    GAttrib *attrib = conn_context->attrib;
 //    uint8_t *value;
@@ -104,7 +95,7 @@ void ofApp::setup(){
 //    gatt_write_cmd(attrib, opt_handle, value, len, nullptr, value);
 
 //    g_free(value);
-/*****/
+
 
 
 
@@ -127,6 +118,9 @@ void ofApp::setup(){
         gattlib_disconnect(connection);
         std::exit(1);
     }
+
+    m_main_loop = g_main_loop_new(NULL, 0);
+    g_main_loop_run(m_main_loop);
 
     //signal(SIGINT, on_user_abort);
 }
@@ -152,7 +146,8 @@ void ofApp::draw(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+    g_main_loop_quit(m_main_loop);
+    std::exit(1);
 }
 
 //--------------------------------------------------------------
